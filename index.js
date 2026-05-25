@@ -1,18 +1,20 @@
 require("dotenv").config();
 
 const crypto = require("node:crypto");
+const http = require("node:http");
 const { PrismaClient } = require("@prisma/client");
 const { Client, Events, GatewayIntentBits } = require("discord.js");
 const { parseExpenseMessage } = require("./parser");
 
 // Required environment variables for Discord, PostgreSQL, and the channel gate.
-const token = process.env.DISCORD_TOKEN;
+const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_TOKEN;
 const databaseUrl = process.env.DATABASE_URL;
 const expenseChannelId = process.env.EXPENSE_CHANNEL_ID;
+const port = process.env.PORT || 3000;
 const prisma = new PrismaClient();
 
 if (!token) {
-  console.error("Missing DISCORD_TOKEN. Copy .env.example to .env and add your bot token.");
+  console.error("Missing DISCORD_BOT_TOKEN. Set it in Render, or use DISCORD_TOKEN locally.");
   process.exit(1);
 }
 
@@ -32,6 +34,23 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ]
+});
+
+const healthServer = http.createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Discord Expense Tracker Bot is running");
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ status: "ok" }));
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({ error: "not_found" }));
 });
 
 client.once(Events.ClientReady, (readyClient) => {
@@ -497,6 +516,7 @@ process.on("unhandledRejection", (error) => {
 async function shutdown() {
   try {
     console.log("Shutting down bot...");
+    healthServer.close();
     await prisma.$disconnect();
     client.destroy();
     process.exit(0);
@@ -516,6 +536,10 @@ process.on("SIGTERM", shutdown);
  */
 async function start() {
   console.log("Starting Discord expense tracker bot...");
+
+  healthServer.listen(port, () => {
+    console.log(`HTTP health server listening on port ${port}.`);
+  });
 
   try {
     await prisma.$connect();

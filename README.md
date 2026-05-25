@@ -70,12 +70,13 @@ A local Node.js Discord bot starter for a personal expense tracker.
 Create `.env` from `.env.example` and set:
 
 ```env
+DISCORD_BOT_TOKEN=your_real_bot_token_here
 DISCORD_TOKEN=your_real_bot_token_here
 DATABASE_URL="postgresql://expense_user:expense_password@localhost:5432/discord_expense_tracker?schema=public"
 EXPENSE_CHANNEL_ID=1507548367700492308
 ```
 
-`DISCORD_TOKEN` is your Discord bot token. `DATABASE_URL` points Prisma to PostgreSQL. `EXPENSE_CHANNEL_ID` limits the bot to one Discord channel in production.
+`DISCORD_BOT_TOKEN` is your Discord bot token for deployment. `DISCORD_TOKEN` is still supported for local development. `DATABASE_URL` points Prisma to PostgreSQL. `EXPENSE_CHANNEL_ID` limits the bot to one Discord channel in production.
 
 ## Run Locally
 
@@ -92,6 +93,13 @@ For development with automatic restarts:
 
 ```bash
 npm run dev
+```
+
+The app also starts a minimal HTTP server for deployment health checks:
+
+```text
+GET / -> Discord Expense Tracker Bot is running
+GET /health -> { "status": "ok" }
 ```
 
 When the bot connects successfully, it prints:
@@ -196,6 +204,32 @@ Open Prisma Studio:
 ```bash
 npm run prisma:studio
 ```
+
+## Render Deployment
+
+Create a Render Web Service connected to this GitHub repository.
+
+Build Command:
+
+```bash
+npm install && npx prisma generate
+```
+
+Start Command:
+
+```bash
+npm start
+```
+
+Set these environment variables in Render:
+
+```env
+DISCORD_BOT_TOKEN=your_discord_bot_token_here
+DATABASE_URL=your_production_postgresql_connection_string
+EXPENSE_CHANNEL_ID=1507548367700492308
+```
+
+Render provides `PORT` automatically. The bot listens on `process.env.PORT || 3000` for health checks.
 
 ## Discord Developer Portal Notes
 
