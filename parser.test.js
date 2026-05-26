@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 
-const { parseExpenseMessage } = require("./parser");
+const { parseExpenseMessage } = require("./src/parser");
 
 const testCases = [
   {
